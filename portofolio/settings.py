@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware'
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -147,7 +147,7 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT =  BASE_DIR /'staticfiles'
 
-WHITENOISE_USE_FINDERS_ = True
+WHITENOISE_USE_FINDERS = True
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
