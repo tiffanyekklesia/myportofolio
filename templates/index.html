@@ -3,59 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tiffany - Portfolio</title>
+
+    <title>Tiffany Ekklesia - Portfolio</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
+
 <body>
     <header class="site-header">
-        <div class="container">
-            <a href="#profile" class="brand">Tiffany</a>
-            <nav>
+        <div class="container nav-container">
+
+            <a href="#profile" class="brand">
+                Tiffany
+            </a>
+
+            <nav aria-label="Main navigation">
                 <a href="#profile">Profile</a>
+                <a href="#projects">Projects</a>
+                <a href="#skills">Skills</a>
             </nav>
+
         </div>
     </header>
 
+
     <main>
+
         <section class="hero" id="profile">
             <div class="container hero-grid">
+
                 <div class="hero-identity">
-                    <p class="hero-kicker">Information Systems &middot; Universitas Indonesia</p>
-                    <h1>Tiffany</h1>
+                    <p class="hero-kicker">
+                        Information Systems · Universitas Indonesia
+                    </p>
+
+                    <h1>
+                        Tiffany<br>
+                        Ekklesia
+                    </h1>
                 </div>
+
+
                 <div class="hero-photo">
                     <div class="photo-block"></div>
-                    <img class="avatar" src="/static/img/Foto_Tiffany Ekklesia.png" alt="Photo of Tiffany">
+
+                    <img
+                        class="avatar"
+                        src="/static/img/Foto_Tiffany Ekklesia.png"
+                        alt="Portrait of Tiffany Ekklesia"
+                    >
                 </div>
+
+
                 <div class="hero-details">
-                    <p class="bio">Born in 8th of March 2007. IS student at Universitas Indonesia. Loves cats but am not allowed to adopt one.</p>
+
+                    <p class="bio">
+                        Born on 8 March 2007. Information Systems student
+                        at Universitas Indonesia with interests in technology,
+                        business, creative work, and visual storytelling.
+                    </p>
+
                     <dl class="meta-list">
+
                         <div class="meta-row">
                             <dt>NPM</dt>
                             <dd>2506546062</dd>
                         </div>
+
                         <div class="meta-row">
                             <dt>Program</dt>
-                            <dd>S1 Ilmu Komputer</dd>
+                            <dd>S1 Sistem Informasi</dd>
                         </div>
+
                     </dl>
+
+
                     <div class="social-links">
-                        <a href="https://github.com/tiffanyekklesia" class="social-link">GitHub</a>
-                        <a href="https://www.linkedin.com/in/tiffany-ekklesia-33b3b7230/" class="social-link">LinkedIn</a>
-                        <a href="mailto:work.tiffanyekklesia@gmail.com" class="social-link">Email</a>
+
+                        <a
+                            href="https://github.com/tiffanyekklesia"
+                            class="social-link"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            GitHub
+                        </a>
+
+                        <a
+                            href="https://www.linkedin.com/in/tiffany-ekklesia-33b3b7230/"
+                            class="social-link"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            LinkedIn
+                        </a>
+
+                        <a
+                            href="mailto:work.tiffanyekklesia@gmail.com"
+                            class="social-link"
+                        >
+                            Email
+                        </a>
+
                     </div>
+
                 </div>
+
             </div>
         </section>
+
+
+        <section class="projects section" id="projects">
+
+            <div class="container">
+
+                <div class="section-heading">
+                    <p class="section-label">02 / Selected Work</p>
+
+                    <h2>
+                        Things I've<br>
+                        worked on.
+                    </h2>
+                </div>
+
+
+                <div class="project-grid">
+
+                    <article class="project-card">
+
+                        <div class="project-number">
+                            01
+                        </div>
+
+                        <div class="project-content">
+
+                            <p class="project-category">
+                                Web Development
+                            </p>
+
+                            <h3>
+                                Personal Portfolio
+                            </h3>
+
+                            <p>
+                                A personal portfolio website created to showcase my background, interests, creative work, and projects.
+                            </p>
+
+                        </div>
+
+                    </article>
+
+
+                    <article class="project-card">
+
+                        <div class="project-number">
+                            02
+                        </div>
+
+                        <div class="project-content">
+
+                            <p class="project-category">
+                                Project Management
+                            </p>
+
+                            <h3>
+                                Open House Fasilkom UI
+                            </h3>
+
+                            <p>
+                                An annual open house event to facilitate computer science enthusiats. 
+                            </p>
+
+                        </div>
+
+                    </article>
+
+
+                    <article class="project-card">
+
+                        <div class="project-number">
+                            03
+                        </div>
+
+                        <div class="project-content">
+
+                            <p class="project-category">
+                                Strategy & Business
+                            </p>
+
+                            <h3>
+                                Business Case Projects
+                            </h3>
+
+                            <p>
+                                Business case work focused on market research, strategic analysis, and developing solutions for real-world business challenges.
+                            </p>
+
+                        </div>
+
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <section class="skills section" id="skills">
+
+            <div class="container skills-layout">
+
+                <div class="section-heading">
+                    <p class="section-label">03 / Skills</p>
+
+                    <h2>
+                        What I<br>
+                        bring.
+                    </h2>
+                </div>
+
+
+                <div class="skills-list">
+
+                    <article class="skill-item">
+                        <span class="skill-number">01</span>
+
+                        <div>
+                            <h3>Technology</h3>
+
+                            <p>
+                                Python, HTML, CSS, and Java.
+                            </p>
+                        </div>
+                    </article>
+
+
+                    <article class="skill-item">
+                        <span class="skill-number">02</span>
+
+                        <div>
+                            <h3>Creative</h3>
+
+                            <p>
+                                Photography, visual design, presentation, video editing, and visual storytelling.
+                            </p>
+                        </div>
+                    </article>
+
+
+                    <article class="skill-item">
+                        <span class="skill-number">03</span>
+
+                        <div>
+                            <h3>Leadership</h3>
+
+                            <p>
+                                Project management, public speaking, teamwork, and event coordination.
+                            </p>
+                        </div>
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
     </main>
 
+
     <footer class="site-footer">
-        <div class="container">
-            <p>&copy; 2026 Tiffany Ekklesia. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+
+        <div class="container footer-container">
+
+            <p>
+                © 2026 Tiffany Ekklesia.
+                Fakultas Ilmu Komputer, Universitas Indonesia.
+            </p>
+
+            <a href="#profile">
+                Back to top ↑
+            </a>
+
         </div>
+
     </footer>
+
 </body>
 </html>
