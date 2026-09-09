@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiffany Ekklesia - Experience</title>
+
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+    <header>
+        <div class="container">
+            <h1>Tiffany</h1>
+
+            <nav>
+                <a href="/">Home</a>
+                <a href="/#profile">Profile</a>
+                <a href="/#projects">Projects</a>
+                <a href="/#skills">Skills</a>
+                <a href="/experience/">Experience</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="container">
+            <h2>My Experience</h2>
+
+            {% for experience in experiences %}
+                <div class="experience-card">
+                    <h3>{{ experience.title }}</h3>
+
+                    <p><strong>{{ experience.company }}</strong></p>
+
+                    <p>{{ experience.description }}</p>
+
+                    <p>
+                        {{ experience.start_date }}
+                        -
+                        {% if experience.end_date %}
+                            {{ experience.end_date }}
+                        {% else %}
+                            Present
+                        {% endif %}
+                    </p>
+                </div>
+            {% empty %}
+                <p>No experience yet.</p>
+            {% endfor %}
+        </section>
+    </main>
+
+</body>
+</html>
