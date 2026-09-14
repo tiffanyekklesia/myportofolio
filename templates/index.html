@@ -26,9 +26,9 @@
 
             <nav aria-label="Main navigation">
                 <a href="#profile">Profile</a>
-                <a href="#projects">Projects</a>
+                <a href="{% url 'main:show_projects' %}">Projects</a>
                 <a href="#skills">Skills</a>
-                <a href="/experience/">Experience</a>
+                <a href="{% url 'main:show_experience' %}">Experience</a>
             </nav>
 
         </div>
@@ -134,82 +134,49 @@
                     </h2>
                 </div>
 
-
                 <div class="project-grid">
 
-                    <article class="project-card">
+                    {% for project in projects %}
 
-                        <div class="project-number">
-                            01
-                        </div>
+                        <article class="project-card">
 
-                        <div class="project-content">
+                            <div class="project-number">
+                                {{ forloop.counter|stringformat:"02d" }}
+                            </div>
 
-                            <p class="project-category">
-                                Consulting
-                            </p>
+                            <div class="project-content">
 
-                            <h3>
-                                DWDG UI
-                            </h3>
+                                <p class="project-category">
+                                    {{ project.technologies }}
+                                </p>
 
-                            <p>
-                                Pursuing project management & outreach as well as strategic consulting initiatives.
-                            </p>
+                                <h3>
+                                    {{ project.name }}
+                                </h3>
 
-                        </div>
+                                <p>
+                                    {{ project.description }}
+                                </p>
 
-                    </article>
+                                {% if project.project_url %}
+                                    <a
+                                        href="{{ project.project_url }}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        View Project →
+                                    </a>
+                                {% endif %}
 
+                            </div>
 
-                    <article class="project-card">
+                        </article>
 
-                        <div class="project-number">
-                            02
-                        </div>
+                    {% empty %}
 
-                        <div class="project-content">
+                        <p>No projects yet.</p>
 
-                            <p class="project-category">
-                                Project Management
-                            </p>
-
-                            <h3>
-                                Open House Fasilkom UI
-                            </h3>
-
-                            <p>
-                                An annual open house event to facilitate computer science enthusiats. 
-                            </p>
-
-                        </div>
-
-                    </article>
-
-
-                    <article class="project-card">
-
-                        <div class="project-number">
-                            03
-                        </div>
-
-                        <div class="project-content">
-
-                            <p class="project-category">
-                                Strategy & Business
-                            </p>
-
-                            <h3>
-                                Business Case Projects
-                            </h3>
-
-                            <p>
-                                Business case work focused on market research, strategic analysis, and developing solutions for real-world business challenges.
-                            </p>
-
-                        </div>
-
-                    </article>
+                    {% endfor %}
 
                 </div>
 

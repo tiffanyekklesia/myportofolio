@@ -10,3 +10,13 @@ class Experience(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Project(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    technologies = models.CharField(max_length=200)
+    project_url = models.URLField(blank=True)
+
+    def __str__(self):
+        return self.name
