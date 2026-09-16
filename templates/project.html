@@ -1,70 +1,66 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tiffany Ekklesia - Projects</title>
+{% extends "base.html" %}
 
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
+{% block title %}
+Tiffany Ekklesia - Projects
+{% endblock title %}
 
-<body>
+{% block content %}
 
-    <header>
-        <div class="container">
-            <h1>Tiffany</h1>
+<section class="container">
 
-            <nav>
-                <a href="/">Home</a>
-                <a href="/#profile">Profile</a>
-                <a href="/#projects">Projects</a>
-                <a href="/#skills">Skills</a>
-                <a href="/experience/">Experience</a>
-                <a href="{% url 'main:show_projects' %}">Projects Page</a>
-            </nav>
+    <div class="projects-header">
+    <h2>My Projects</h2>
+
+    <a href="{% url 'main:create_project' %}">
+        + Add Project
+    </a>
+    </div>
+
+    <form method="GET">
+        <input
+            type="text"
+            name="name"
+            placeholder="Search projects..."
+            value="{{ request.GET.name }}"
+        >
+        <button type="submit">Search</button>
+    </form>
+
+    {% for project in projects %}
+
+        <div class="project-card">
+
+            <h3>{{ project.name }}</h3>
+
+            <p>{{ project.description }}</p>
+
+            <p>
+                <strong>Technologies:</strong>
+                {{ project.technologies }}
+            </p>
+
+            {% if project.project_url %}
+                <p>
+                    <a
+                        href="{{ project.project_url }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        View Project →
+                    </a>
+                </p>
+            {% endif %}
+
         </div>
-    </header>
 
-    <main>
-        <section class="container">
+        {% include 'components/project_delete_modal.html' %}
 
-            <h2>My Projects</h2>
+    {% empty %}
 
-            {% for project in projects %}
+        <p>No projects yet.</p>
 
-                <div class="project-card">
+    {% endfor %}
 
-                    <h3>{{ project.name }}</h3>
+</section>
 
-                    <p>{{ project.description }}</p>
-
-                    <p>
-                        <strong>Technologies:</strong>
-                        {{ project.technologies }}
-                    </p>
-
-                    {% if project.project_url %}
-                        <p>
-                            <a
-                                href="{{ project.project_url }}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                View Project →
-                            </a>
-                        </p>
-                    {% endif %}
-
-                </div>
-
-            {% empty %}
-
-                <p>No projects yet.</p>
-
-            {% endfor %}
-
-        </section>
-    </main>
-
-</body>
-</html>
+{% endblock content %}

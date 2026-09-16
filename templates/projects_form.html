@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}
+Add Project - Tiffany Ekklesia
+{% endblock title %}
+
+{% block content %}
+
+<section class="container">
+
+    <h2>Add a New Project</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">
+            Add Project
+        </button>
+    </form>
+
+</section>
+
+{% endblock content %}
