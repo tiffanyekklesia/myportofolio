@@ -4,7 +4,7 @@ NPM     : 2506546062
 
 Class   : PBP E
 
-### Assignmnet 1
+### Assignment 1
 1. In Tutorial 1 and Individual Assignment 1, you were given the freedom to decide your portfolio website’s design. When you designed the HTML structure you used, did you use semantic HTML5 elements such as <section>, <article>, or <aside>? If so, how did those elements help you build the static web? If not, why did your design’s needs stay met without them?
 Answer  : I used semantic HTML5 elements in my portofolio. I used <section> to separate major parts of the page, such as the About Me, Projects, and Skills sections. Within the projects and Skills sections, I used <article> to represent individual pieces of content. This made the HTML structure easier to understand and maintain because the structure of the page reflects the meaning of its content rather than only its visual appearance. I also used <nav> for the navigation links and <footer> for the information at the bottom of the page.
 
@@ -24,10 +24,23 @@ Answer  : Using a model is better because portfolio data can be stored and manag
 3. What is the difference between makemigrations and migrate in Django?
 Answer  : makemigrations is used to detect changes in Django models and create migration files that describe those changes. For example, after adding the Project model, I ran python manage.py makemigrations and Django created the 0002_project.py migration file. On the other hand, migrate applies the migration files to the database, so the changes defined by the migrations actually take effect in the database. In my project, I ran python manage.py migrate after makemigrations to create the database structure for the Project model.
 
+### Assignment 3
+1 Explain why we use Django’s `ModelForm` instead of creating HTML forms manually. Additionally, explain why we are required to add `{% csrf_token %}` to these forms?
+Answer  : Django's `ModelForm` makes it easier to create forms because the form fields can be generated directly from an existing model. In my project, `ExperienceForm` is connected to the `Experience` model and automatically provides form fields based on the model fields, such as title, company, description, start_date, and end_date. This reduces the amount of HTML and validation logic that needs to be written manually. `ModelForm` also provides built-in validation and allows the submitted data to be saved directly to the database using `form.save()`. `{% csrf_token %}` is required to protect POST forms from Cross-Site Request Forgery (CSRF) attacks. It ensures that the POST request comes from a trusted form on my website rather than an unauthorized website attempting to perform an action using the user's session.
+
+2. In Tutorial 03, we discussed JSON and XML data formats. Why is JSON preferred in modern web application development compared to XML?
+Answer  : JSON is generally preferred in modern web applications because it has a simpler and more compact structure than XML. JSON uses a format based on objects and arrays, which makes it easy to read and work with in JavaScript and other programming languages. It also requires less syntax because it does not need opening and closing tags for every piece of data. In my project, Django serializes the Experience objects into JSON so that the data can be accessed through the `/api/experiences/` endpoint. This makes the data easier to exchange between the backend and other applications or frontend components.
+
+3. Explain the flow that occurs when you use a view function to return your portfolio data in JSON format. Why do we need to perform the serialization process on Django models before returning the data?
+Answer  : When a user accesses the `/api/experiences/` endpoint, Django first matches the URL with the `get_experiences_json` view in `main/views.py`. The view retrieves the Experience objects from the database using `Experience.objects.all()`. Since Django model objects cannot be directly returned as JSON, the objects need to be serialized first. In my project, I use `serializers.serialize("json", experiences)` to convert the Experience objects and their fields into JSON data. The JSON data is then returned using an `HttpResponse` with the `application/json` content type. Serialization is necessary because JSON provides a standard text-based format that can be transmitted through HTTP and understood by other applications.
+
 ### AI disclosure
 I used ChatGPT as an AI-assisted learning and development tool during this assigment.
 AI assistance was used to:
 - explain HTML5 and CSS3 concepts used in the implementations
 - help plan the HTML structure and semantic elements
 - suggest CSS layouts and responsive design approaches
+- explain Django MVT, ModelForm, CRUD, JSON serialization/deserialization, and CSRF concepts
+- help debug and structure Django views, forms, URLs, and templates
+- explain the reasoning behind implementation steps rather than only providing finished code
 My main prompting approach was to ask the AI to explain the reasoning behind the suggested HTML and CSS rather than only requesting a finished solution. AI-generated suggestions were not accepted blindly. I manually checked the resulting structure, corrected personal information, adjusted the layout, and tested the implemenattion in the browser.

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core import serializers
 from django.http import HttpResponse
 from .models import Experience, Project
-from .forms import ProjectForm
+from .forms import ProjectForm, ExperienceForm
 
 def show_main(request):
     projects = Project.objects.all()
@@ -16,7 +16,14 @@ def show_main(request):
 
 
 def show_experience(request):
-    experiences = Experience.objects.all()
+    response = get_experiences_json(request)
+
+    data = serializers.deserialize(
+        "json",
+        response.content.decode("utf-8")
+    )
+
+    experiences = [item.object for item in data]
 
     context = {
         'experiences': experiences,
@@ -68,6 +75,50 @@ def get_projects_json(request):
         projects = Project.objects.all()
 
     data = serializers.serialize("json", projects)
+
+    return HttpResponse(
+        data,
+        content_type="application/json"
+    )
+
+def create_experience(request):
+    if request.method == "POST":
+        form = ExperienceForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('main:show_experience')
+    else:
+        form = ExperienceForm()
+
+    return render(request, "experiences_form.html", {'form': form})
+
+def update_experience(request, experience_id):
+    experience = get_object_or_404(Experience, id=experience_id)
+
+    if request.method == "POST":
+        form = ExperienceForm(request.POST, instance=experience)
+        if form.is_valid():
+            form.save()
+            return redirect('main:show_experience')
+    else:
+        form = ExperienceForm(instance=experience)
+
+    return render(request, "experiences_form.html", {'form': form})
+
+def delete_experience(request, experience_id):
+    if request.method == "POST":
+        experience = get_object_or_404(
+            Experience,
+            id=experience_id
+        )
+        experience.delete()
+
+    return redirect('main:show_experience')
+
+def get_experiences_json(request):
+    experiences = Experience.objects.all()
+
+    data = serializers.serialize("json", experiences)
 
     return HttpResponse(
         data,

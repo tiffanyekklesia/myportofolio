@@ -26,6 +26,17 @@ Tiffany Ekklesia - Experience
                     Present
                 {% endif %}
             </p>
+            <a href="{% url 'main:update_experience' experience.id %}">
+                Edit
+            </a>
+
+            <form method="POST" action="{% url 'main:delete_experience' experience.id %}">
+                {% csrf_token %}
+                <button type="submit">
+                    Delete
+                </button>
+            </form>
+
         </div>
 
     {% empty %}

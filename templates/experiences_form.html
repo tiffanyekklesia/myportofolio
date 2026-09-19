@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}
+Add Experience - Tiffany Ekklesia
+{% endblock title %}
+
+{% block content %}
+
+<section class="container">
+
+    <h2>Add a New Experience</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">
+            Add Experience
+        </button>
+    </form>
+
+</section>
+
+{% endblock content %}
