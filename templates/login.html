@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}
+Login - Tiffany Ekklesia
+{% endblock title %}
+
+{% block content %}
+
+<section class="container">
+
+    <h2>Login</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">
+            Login
+        </button>
+    </form>
+
+    <p>
+        Don't have an account?
+        <a href="{% url 'main:register' %}">Register</a>
+    </p>
+
+</section>
+
+{% endblock content %}

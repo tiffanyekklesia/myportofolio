@@ -51,9 +51,25 @@ Tiffany Ekklesia - Projects
                 </p>
             {% endif %}
 
+            <p>
+                ⭐ {{ project.stars.count }} stars
+
+                {% if user.is_authenticated %}
+                    <a href="{% url 'main:toggle_star' project.id %}">
+                        {% if user in project.stars.all %}
+                            Unstar
+                        {% else %}
+                            Star
+                        {% endif %}
+                    </a>
+                {% endif %}
+            </p>
+
         </div>
 
-        {% include 'components/project_delete_modal.html' %}
+        {% if project.owner == user or user.is_superuser %}
+            {% include 'components/project_delete_modal.html' %}
+        {% endif %}
 
     {% empty %}
 

@@ -30,4 +30,12 @@ urlpatterns = [
         views.delete_project,
         name='delete_project'
     ),
+    path('register/', views.register, name='register'),
+    path('login/', views.login_user, name='login'),
+    path('logout/', views.logout_user, name='logout'),
+    path(
+        'projects/star/<int:project_id>/',
+        views.toggle_star,
+        name='toggle_star'
+    ),
 ]
