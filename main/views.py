@@ -79,6 +79,34 @@ def create_project(request):
     return render(request, "projects_form.html", {'form': form})
 
 @login_required(login_url='/login/')
+def update_project(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+
+    if not (
+        request.user.is_superuser
+        or request.user.has_perm('main.change_project')
+    ):
+        raise PermissionDenied
+
+    if request.method == "POST":
+        form = ProjectForm(request.POST, instance=project)
+
+        if form.is_valid():
+            form.save()
+            return redirect('main:show_projects')
+    else:
+        form = ProjectForm(instance=project)
+
+    return render(
+        request,
+        "projects_form.html",
+        {
+            'form': form,
+            'is_edit': True,
+        }
+    )
+
+@login_required(login_url='/login/')
 def delete_project(request, project_id):
     if not request.user.is_superuser:
         raise PermissionDenied
@@ -94,10 +122,11 @@ def delete_project(request, project_id):
 def toggle_star(request, project_id):
     project = get_object_or_404(Project, id=project_id)
 
-    if request.user in project.stars.all():
-        project.stars.remove(request.user)
-    else:
-        project.stars.add(request.user)
+    if request.method == "POST":
+        if request.user in project.stars.all():
+            project.stars.remove(request.user)
+        else:
+            project.stars.add(request.user)
 
     return redirect('main:show_projects')
 

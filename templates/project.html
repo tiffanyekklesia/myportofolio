@@ -11,9 +11,11 @@ Tiffany Ekklesia - Projects
     <div class="projects-header">
     <h2>My Projects</h2>
 
-    <a href="{% url 'main:create_project' %}">
-        + Add Project
-    </a>
+    {% if user.is_superuser %}
+        <a href="{% url 'main:create_project' %}">
+            + Add Project
+        </a>
+    {% endif %}
     </div>
 
     <form method="GET">
@@ -55,19 +57,31 @@ Tiffany Ekklesia - Projects
                 ⭐ {{ project.stars.count }} stars
 
                 {% if user.is_authenticated %}
-                    <a href="{% url 'main:toggle_star' project.id %}">
-                        {% if user in project.stars.all %}
-                            Unstar
-                        {% else %}
-                            Star
-                        {% endif %}
-                    </a>
+                    <form method="POST" action="{% url 'main:toggle_star' project.id %}">
+                        {% csrf_token %}
+
+                        <button type="submit">
+                            {% if user in project.stars.all %}
+                                Unstar
+                            {% else %}
+                                Star
+                            {% endif %}
+                        </button>
+                    </form>
                 {% endif %}
             </p>
 
         </div>
 
-        {% if project.owner == user or user.is_superuser %}
+        {% if user.is_superuser or perms.main.change_project %}
+            <p>
+                <a href="{% url 'main:update_project' project.id %}">
+                    Edit Project
+                </a>
+            </p>
+        {% endif %}
+
+        {% if user.is_superuser %}
             {% include 'components/project_delete_modal.html' %}
         {% endif %}
 
