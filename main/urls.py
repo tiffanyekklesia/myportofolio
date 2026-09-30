@@ -25,6 +25,11 @@ urlpatterns = [
     path('projects/', views.show_projects, name='show_projects'),
     path('projects/add/', views.create_project, name='create_project'),
     path(
+        'projects/add-ajax/',
+        views.create_project_ajax,
+        name='create_project_ajax'
+    ),
+    path(
         'projects/edit/<int:project_id>/',
         views.update_project,
         name='update_project'

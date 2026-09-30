@@ -1,0 +1,67 @@
+<div
+    id="add-project-modal"
+    class="project-modal"
+    popover="manual"
+>
+    <div class="project-modal-content">
+
+        <div class="project-modal-header">
+            <h2>Add Project</h2>
+
+            <button
+                type="button"
+                class="project-modal-close"
+                onclick="closeProjectModal()"
+            >
+                ×
+            </button>
+        </div>
+
+        <form
+            id="project-form"
+            method="POST"
+            action="{% url 'main:create_project' %}"
+            onsubmit="addProject(event)"
+        >
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div class="form-group">
+
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                    </label>
+
+                    {{ field }}
+
+                    {% if field.errors %}
+                        <div class="form-error">
+                            {{ field.errors }}
+                        </div>
+                    {% endif %}
+
+                </div>
+            {% endfor %}
+
+            <div class="project-modal-actions">
+
+                <button
+                    type="button"
+                    onclick="closeProjectModal()"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    id="add-project-submit"
+                >
+                    Add Project
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>

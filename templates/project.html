@@ -9,88 +9,323 @@ Tiffany Ekklesia - Projects
 <section class="container">
 
     <div class="projects-header">
-    <h2>My Projects</h2>
+        <h2>My Projects</h2>
 
-    {% if user.is_superuser %}
-        <a href="{% url 'main:create_project' %}">
-            + Add Project
-        </a>
-    {% endif %}
+        {% if user.is_superuser %}
+            <button
+                type="button"
+                popovertarget="add-project-modal"
+            >
+                + Add Project
+            </button>
+        {% endif %}
     </div>
 
-    <form method="GET">
+    <form id="project-search-form">
         <input
             type="text"
+            id="search-input"
             name="name"
             placeholder="Search projects..."
-            value="{{ request.GET.name }}"
+            value="{{ title_query }}"
         >
         <button type="submit">Search</button>
     </form>
 
-    {% for project in projects %}
+    <div id="loading" class="hide">
+        Loading projects...
+    </div>
 
-        <div class="project-card">
+    <div id="error" class="hide">
+        Failed to load projects.
+    </div>
 
-            <h3>{{ project.name }}</h3>
+    <div id="empty" class="hide">
+        No projects yet.
+    </div>
 
-            <p>{{ project.description }}</p>
+    <div id="grid" class="projects-grid"></div>
+
+</section>
+
+{% if user.is_superuser %}
+    {% include 'components/project_form_modal.html' %}
+{% endif %}
+
+<script>
+    const PROJECTS_API_ENDPOINT = "{% url 'main:get_projects_json' %}";
+    const CREATE_PROJECT_API_ENDPOINT = "{% url 'main:create_project_ajax' %}";
+    const IS_SUPERUSER = document.body.dataset.isSuperuser === "true";
+    const searchForm = document.getElementById("project-search-form");
+    const searchInput = document.getElementById("search-input");
+
+    const loadingSection = document.getElementById("loading");
+    const errorSection = document.getElementById("error");
+    const emptySection = document.getElementById("empty");
+    const gridSection = document.getElementById("grid");
+
+    let currentController = null;
+
+    function displayPageSection(section) {
+        loadingSection.classList.add("hide");
+        errorSection.classList.add("hide");
+        emptySection.classList.add("hide");
+        gridSection.classList.add("hide");
+
+        if (section === "loading") {
+            loadingSection.classList.remove("hide");
+        } else if (section === "error") {
+            errorSection.classList.remove("hide");
+        } else if (section === "empty") {
+            emptySection.classList.remove("hide");
+        } else if (section === "grid") {
+            gridSection.classList.remove("hide");
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function buildProjectCardElement(project) {
+        const fields = project.fields;
+
+        const name = escapeHtml(fields.name);
+        const description = escapeHtml(fields.description);
+        const technologies = escapeHtml(fields.technologies);
+        const projectUrl = escapeHtml(fields.project_url);
+        const starredByNames = escapeHtml(fields.starred_by_names);
+
+        const card = document.createElement("div");
+        card.className = "project-card";
+
+        card.innerHTML = `
+            <h3>${name}</h3>
+
+            <p>${description}</p>
 
             <p>
                 <strong>Technologies:</strong>
-                {{ project.technologies }}
+                ${technologies}
             </p>
 
-            {% if project.project_url %}
-                <p>
-                    <a
-                        href="{{ project.project_url }}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        View Project →
-                    </a>
-                </p>
-            {% endif %}
+            ${
+                fields.project_url
+                    ? `
+                        <p>
+                            <a
+                                href="${projectUrl}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                View Project →
+                            </a>
+                        </p>
+                    `
+                    : ""
+            }
 
             <p>
-                ⭐ {{ project.stars.count }} stars
-
-                {% if user.is_authenticated %}
-                    <form method="POST" action="{% url 'main:toggle_star' project.id %}">
-                        {% csrf_token %}
-
-                        <button type="submit">
-                            {% if user in project.stars.all %}
-                                Unstar
-                            {% else %}
-                                Star
-                            {% endif %}
-                        </button>
-                    </form>
-                {% endif %}
+                ⭐ ${fields.star_count} stars
+                ${
+                    IS_SUPERUSER
+                        ? `
+                            <a href="/projects/edit/${project.pk}/">
+                                Edit Project
+                            </a>
+                        `
+                        : ""
+                }
             </p>
 
-        </div>
+            ${
+                fields.starred_by_names
+                    ? `
+                        <p>
+                            Starred by: ${starredByNames}
+                        </p>
+                    `
+                    : ""
+            }
 
-        {% if user.is_superuser or perms.main.change_project %}
-            <p>
-                <a href="{% url 'main:update_project' project.id %}">
-                    Edit Project
-                </a>
-            </p>
-        {% endif %}
+            ${
+                IS_SUPERUSER
+                    ? `
+                        <p>
+                            <a href="/projects/delete/${project.pk}/">
+                                Delete Project
+                            </a>
+                        </p>
+                    `
+                    : ""
+            }
+        `;
 
-        {% if user.is_superuser %}
-            {% include 'components/project_delete_modal.html' %}
-        {% endif %}
+        return card;
+    }
 
-    {% empty %}
+    async function fetchProjects(query = "") {
+        if (currentController) {
+            currentController.abort();
+        }
 
-        <p>No projects yet.</p>
+        currentController = new AbortController();
 
-    {% endfor %}
+        displayPageSection("loading");
 
-</section>
+        try {
+            const url = query
+                ? `${PROJECTS_API_ENDPOINT}?name=${encodeURIComponent(query)}`
+                : PROJECTS_API_ENDPOINT;
+
+            const response = await fetch(url, {
+                signal: currentController.signal
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch projects");
+            }
+
+            const projects = await response.json();
+
+            gridSection.innerHTML = "";
+
+            if (projects.length === 0) {
+                displayPageSection("empty");
+                return;
+            }
+
+            projects.forEach(project => {
+                const card = buildProjectCardElement(project);
+                gridSection.appendChild(card);
+            });
+
+            displayPageSection("grid");
+
+        } catch (error) {
+            if (error.name === "AbortError") {
+                return;
+            }
+
+            console.error(error);
+            displayPageSection("error");
+        }
+    }
+
+    function closeProjectModal() {
+        document
+            .getElementById("add-project-modal")
+            .hidePopover();
+    }
+
+    const SEARCH_DEBOUNCE_DELAY = 300;
+    let searchDebounceTimer = null;
+
+    function searchProjects() {
+        clearTimeout(searchDebounceTimer);
+
+        searchDebounceTimer = setTimeout(() => {
+            const query = searchInput.value.trim();
+
+            fetchProjects(query);
+        }, SEARCH_DEBOUNCE_DELAY);
+    }
+
+    searchInput.addEventListener("input", searchProjects);
+
+    searchForm.addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        clearTimeout(searchDebounceTimer);
+
+        const query = searchInput.value.trim();
+
+        fetchProjects(query);
+    });
+
+    fetchProjects(searchInput.value.trim());
+
+    function getCookie(name) {
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+
+                if (cookie.startsWith(name + "=")) {
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    );
+
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
+
+    async function addProject(event) {
+        event.preventDefault();
+
+        const projectForm = document.getElementById("project-form");
+        const submitButton = document.getElementById("add-project-submit");
+
+        submitButton.disabled = true;
+
+        try {
+            const response = await fetch(
+                CREATE_PROJECT_API_ENDPOINT,
+                {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCookie("csrftoken")
+                    },
+                    body: new FormData(projectForm)
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "Failed to create project."
+                );
+            }
+
+            closeProjectModal();
+
+            projectForm.reset();
+
+            showToast(
+                "Success",
+                "Project added successfully!",
+                "success"
+            );
+
+            await fetchProjects(searchInput.value.trim());
+
+        } catch (error) {
+            console.error(error);
+
+            showToast(
+                "Error",
+                error.message || "Failed to create project.",
+                "error"
+            );
+
+        } finally {
+            submitButton.disabled = false;
+        }
+    }
+
+</script>
 
 {% endblock content %}

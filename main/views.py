@@ -7,7 +7,8 @@ from django.core.exceptions import PermissionDenied
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core import serializers
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.http import require_POST
 
 from .models import Experience, Project
 from .forms import ProjectForm, ExperienceForm
@@ -47,17 +48,10 @@ def show_experience(request):
 
 
 def show_projects(request):
-    response = get_projects_json(request)
-
-    data = serializers.deserialize(
-        "json",
-        response.content.decode("utf-8")
-    )
-
-    projects = [item.object for item in data]
-
     context = {
-        'projects': projects,
+        'name': 'Tiffany Ekklesia',
+        'title_query': request.GET.get('name', '').strip(),
+        'form': ProjectForm(),
     }
 
     return render(request, "project.html", context)
@@ -77,6 +71,37 @@ def create_project(request):
         form = ProjectForm()
 
     return render(request, "projects_form.html", {'form': form})
+
+@require_POST
+@login_required(login_url='/login/')
+def create_project_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {'error': 'You do not have permission to create projects.'},
+            status=403
+        )
+
+    form = ProjectForm(request.POST)
+
+    if form.is_valid():
+        project = form.save(commit=False)
+        project.owner = request.user
+        project.save()
+
+        return JsonResponse(
+            {
+                'message': 'Project created successfully.',
+                'project_id': project.id,
+            },
+            status=201
+        )
+
+    return JsonResponse(
+        {
+            'errors': form.errors,
+        },
+        status=400
+    )
 
 @login_required(login_url='/login/')
 def update_project(request, project_id):
@@ -131,19 +156,42 @@ def toggle_star(request, project_id):
     return redirect('main:show_projects')
 
 def get_projects_json(request):
-    name = request.GET.get("name", "").strip()
+    name_query = request.GET.get("name", "").strip()
 
-    if name:
-        projects = Project.objects.filter(name__icontains=name)
-    else:
-        projects = Project.objects.all()
+    projects = Project.objects.prefetch_related('stars').all()
 
-    data = serializers.serialize("json", projects)
+    if name_query:
+        projects = projects.filter(name__icontains=name_query)
 
-    return HttpResponse(
-        data,
-        content_type="application/json"
-    )
+    data = []
+
+    for project in projects:
+        starred_users = project.stars.all()
+
+        is_starred = (
+            request.user in starred_users
+            if request.user.is_authenticated
+            else False
+        )
+
+        starred_by_names = ", ".join(
+            [user.username for user in starred_users]
+        )
+
+        data.append({
+            "pk": str(project.id),
+            "fields": {
+                "name": project.name,
+                "description": project.description,
+                "technologies": project.technologies,
+                "project_url": project.project_url,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+
+    return JsonResponse(data, safe=False)
 
 def create_experience(request):
     if request.method == "POST":
