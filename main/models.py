@@ -7,6 +7,11 @@ class Experience(models.Model):
     description = models.TextField()
     start_date = models.DateField()
     end_date = models.DateField(null=True, blank=True)
+    stars = models.ManyToManyField(
+        User,
+        related_name='starred_experiences',
+        blank=True
+    )
 
     def __str__(self):
         return self.title

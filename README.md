@@ -32,15 +32,26 @@ Answer  : Django's `ModelForm` makes it easier to create forms because the form 
 Answer  : JSON is generally preferred in modern web applications because it has a simpler and more compact structure than XML. JSON uses a format based on objects and arrays, which makes it easy to read and work with in JavaScript and other programming languages. It also requires less syntax because it does not need opening and closing tags for every piece of data. In my project, Django serializes the Experience objects into JSON so that the data can be accessed through the `/api/experiences/` endpoint. This makes the data easier to exchange between the backend and other applications or frontend components.
 
 3. Explain the flow that occurs when you use a view function to return your portfolio data in JSON format. Why do we need to perform the serialization process on Django models before returning the data?
-Answer  : When a user accesses the `/api/experiences/` endpoint, Django first matches the URL with the `get_experiences_json` view in `main/views.py`. The view retrieves the Experience objects from the database using `Experience.objects.all()`. Since Django model objects cannot be directly returned as JSON, the objects need to be serialized first. In my project, I use `serializers.serialize("json", experiences)` to convert the Experience objects and their fields into JSON data. The JSON data is then returned using an `HttpResponse` with the `application/json` content type. Serialization is necessary because JSON provides a standard text-based format that can be transmitted through HTTP and understood by other applications.
+Answer : When a user accesses the /api/experiences/ endpoint, Django first matches the URL with the get_experiences_json view in main/views.py. The view retrieves Experience objects from the database and converts the relevant model fields into a list of Python dictionaries. Each dictionary contains the experience ID, title, company, description, dates, star count, and whether the current user has starred the experience. The view then returns this data using JsonResponse. The conversion is necessary because Django model objects themselves are not directly JSON-compatible, while JSON-compatible data can be transmitted through HTTP and processed by JavaScript in the browser.
+
+### Assignment 5
+1. Explain the concept of debouncing and why it is important when implementing an AJAX-based search feature.
+Answer  : Debouncing is a technique that delays the execution of a function until a certain amount of time has passed since the last event. In my project, the Experience search uses a 300-millisecond debounce before sending an AJAX request. Without debouncing, a request could be sent every time the user types a character, which would create many unnecessary requests while the user is still typing. Debouncing reduces the number of requests sent to the server and makes the search feature more efficient.
+
+2. Explain the relationship between `await` and `fetch()`. What would happen if we did not use `await` when calling `fetch()`?
+Answer  : `fetch()` returns a Promise because the browser needs to perform the network request asynchronously. Using `await` pauses the execution of the async function until the Promise is resolved, allowing the response to be used directly in the next step. In my project, I use `await fetch()` to wait for the server response and then use `await response.json()` to read the returned JSON data. Without `await`, the variable would contain a Promise instead of the actual response, so the code would need to handle the Promise using `.then()` or another asynchronous approach.
+
+3. Explain what XSS is and why displaying data through JavaScript and AJAX can make XSS protection especially important.
+Answer  : Cross-Site Scripting (XSS) is an attack where malicious scripts are inserted into content that is later displayed and executed in a user's browser. XSS protection is especially important when using AJAX because data returned from the server is manually inserted into the DOM using JavaScript. If untrusted data were inserted using `innerHTML`, malicious HTML or JavaScript could potentially be interpreted by the browser. In my project, the server removes HTML tags from Experience input using `strip_tags()` in the ModelForm, while the frontend uses DOM methods such as `textContent` instead of `innerHTML` when displaying the returned data. This provides protection on both the server and client sides.
 
 ### AI disclosure
-I used ChatGPT as an AI-assisted learning and development tool during this assigment.
+I used ChatGPT as an AI-assisted learning and development tool during this assignment.
 AI assistance was used to:
-- explain HTML5 and CSS3 concepts used in the implementations
-- help plan the HTML structure and semantic elements
-- suggest CSS layouts and responsive design approaches
-- explain Django MVT, ModelForm, CRUD, JSON serialization/deserialization, and CSRF concepts
-- help debug and structure Django views, forms, URLs, and templates
-- explain the reasoning behind implementation steps rather than only providing finished code
-My main prompting approach was to ask the AI to explain the reasoning behind the suggested HTML and CSS rather than only requesting a finished solution. AI-generated suggestions were not accepted blindly. I manually checked the resulting structure, corrected personal information, adjusted the layout, and tested the implemenattion in the browser.
+* explain HTML5 and CSS3 concepts used in the implementations
+* help plan the HTML structure and semantic elements
+* suggest CSS layouts and responsive design approaches
+* explain Django MVT, ModelForm, CRUD, JSON serialization/deserialization, and CSRF concepts
+* help debug and structure Django views, forms, URLs, and templates
+* explain JavaScript DOM manipulation, AJAX, Fetch API, async/await, debouncing, CSRF handling, and XSS protection
+* help reason through the implementation of the AJAX-based Experience section
+My main prompting approach was to ask the AI to explain the reasoning behind the suggested implementations rather than only requesting a finished solution. AI-generated suggestions were not accepted blindly. I manually checked the resulting structure, corrected personal information, adjusted the implementation, and tested the functionality in the browser, including AJAX loading, search, form validation, permissions, toast notifications, and XSS protection.

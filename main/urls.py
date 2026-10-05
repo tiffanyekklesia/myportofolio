@@ -13,6 +13,11 @@ urlpatterns = [
     ),
     path('experience/add/', views.create_experience, name='create_experience'),
     path(
+        'experience/add-ajax/',
+        views.create_experience_ajax,
+        name='create_experience_ajax'
+    ),
+    path(
         'experience/edit/<int:experience_id>/',
         views.update_experience,
         name='update_experience'

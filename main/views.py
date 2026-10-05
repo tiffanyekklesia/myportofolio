@@ -6,7 +6,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from django.core import serializers
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 
@@ -31,21 +30,11 @@ def show_main(request):
 
 
 def show_experience(request):
-    response = get_experiences_json(request)
-
-    data = serializers.deserialize(
-        "json",
-        response.content.decode("utf-8")
-    )
-
-    experiences = [item.object for item in data]
-
     context = {
-        'experiences': experiences,
+        'form': ExperienceForm(),
     }
 
     return render(request, "experience.html", context)
-
 
 def show_projects(request):
     context = {
@@ -204,6 +193,36 @@ def create_experience(request):
 
     return render(request, "experiences_form.html", {'form': form})
 
+@require_POST
+def create_experience_ajax(request):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        return JsonResponse(
+            {
+                'error': 'You do not have permission to create experiences.'
+            },
+            status=403
+        )
+
+    form = ExperienceForm(request.POST)
+
+    if form.is_valid():
+        experience = form.save()
+
+        return JsonResponse(
+            {
+                'message': 'Experience created successfully.',
+                'experience_id': experience.id,
+            },
+            status=201
+        )
+
+    return JsonResponse(
+        {
+            'errors': form.errors,
+        },
+        status=400
+    )
+
 def update_experience(request, experience_id):
     experience = get_object_or_404(Experience, id=experience_id)
 
@@ -228,14 +247,42 @@ def delete_experience(request, experience_id):
     return redirect('main:show_experience')
 
 def get_experiences_json(request):
-    experiences = Experience.objects.all()
+    search_query = request.GET.get("search", "").strip()
 
-    data = serializers.serialize("json", experiences)
+    experiences = Experience.objects.prefetch_related('stars').all()
 
-    return HttpResponse(
-        data,
-        content_type="application/json"
-    )
+    if search_query:
+        experiences = experiences.filter(
+            title__icontains=search_query
+        )
+
+    data = []
+
+    for experience in experiences:
+        starred_users = experience.stars.all()
+
+        is_starred = (
+            request.user in starred_users
+            if request.user.is_authenticated
+            else False
+        )
+
+        data.append({
+            "id": experience.id,
+            "title": experience.title,
+            "company": experience.company,
+            "description": experience.description,
+            "start_date": experience.start_date.strftime("%Y-%m-%d"),
+            "end_date": (
+                experience.end_date.strftime("%Y-%m-%d")
+                if experience.end_date
+                else None
+            ),
+            "star_count": starred_users.count(),
+            "is_starred": is_starred,
+        })
+
+    return JsonResponse(data, safe=False)
 
 def register(request):
     if request.method == "POST":

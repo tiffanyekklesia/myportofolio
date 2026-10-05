@@ -1,0 +1,61 @@
+<div
+    id="add-experience-modal"
+    class="project-modal"
+    popover="manual"
+>
+    <div class="project-modal-content">
+
+        <div class="project-modal-header">
+            <h2>Add Experience</h2>
+
+            <button
+                type="button"
+                class="project-modal-close"
+                onclick="closeExperienceModal()"
+            >
+                ×
+            </button>
+        </div>
+
+        <form
+            id="experience-form"
+            method="POST"
+            action="{% url 'main:create_experience_ajax' %}"
+            onsubmit="addExperience(event)"
+        >
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div class="form-group">
+
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                    </label>
+
+                    {{ field }}
+
+                </div>
+            {% endfor %}
+
+            <div class="project-modal-actions">
+
+                <button
+                    type="button"
+                    onclick="closeExperienceModal()"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    id="add-experience-submit"
+                >
+                    Add Experience
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>

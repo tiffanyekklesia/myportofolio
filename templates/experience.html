@@ -7,41 +7,269 @@ Tiffany Ekklesia - Experience
 {% block content %}
 
 <section class="container">
-    <h2>My Experience</h2>
 
-    {% for experience in experiences %}
-        <div class="experience-card">
-            <h3>{{ experience.title }}</h3>
+    <div class="experience-header">
+        <h2>My Experience</h2>
 
-            <p><strong>{{ experience.company }}</strong></p>
+        {% if user.is_superuser %}
+            <button
+                type="button"
+                popovertarget="add-experience-modal"
+            >
+                + Add Experience
+            </button>
+        {% endif %}
+    </div>
 
-            <p>{{ experience.description }}</p>
+    <div class="experience-search">
+        <label for="experience-search">
+            Search experience
+        </label>
 
-            <p>
-                {{ experience.start_date }}
-                -
-                {% if experience.end_date %}
-                    {{ experience.end_date }}
-                {% else %}
-                    Present
-                {% endif %}
-            </p>
-            <a href="{% url 'main:update_experience' experience.id %}">
-                Edit
-            </a>
+        <input
+            type="text"
+            id="experience-search"
+            placeholder="Search by title..."
+            autocomplete="off"
+        >
+    </div>
 
-            <form method="POST" action="{% url 'main:delete_experience' experience.id %}">
-                {% csrf_token %}
-                <button type="submit">
-                    Delete
-                </button>
-            </form>
+    <p id="experience-loading">
+        Loading experiences...
+    </p>
 
-        </div>
+    <p id="experience-empty" style="display: none;">
+        No experience found.
+    </p>
 
-    {% empty %}
-        <p>No experience yet.</p>
-    {% endfor %}
+    <p id="experience-error" style="display: none;">
+        Failed to load experiences. Please try again.
+    </p>
+
+    <div id="experience-list"></div>
+
 </section>
+
+{% if user.is_superuser %}
+    {% include 'components/experience_form_modal.html' %}
+{% endif %}
+
+<script>
+    const CREATE_EXPERIENCE_API_ENDPOINT =
+        "{% url 'main:create_experience_ajax' %}";
+
+    const experienceList =
+        document.getElementById("experience-list");
+
+    const loadingMessage =
+        document.getElementById("experience-loading");
+
+    const emptyMessage =
+        document.getElementById("experience-empty");
+
+    const errorMessage =
+        document.getElementById("experience-error");
+
+
+    async function loadExperiences(search = "") {
+        loadingMessage.style.display = "block";
+        emptyMessage.style.display = "none";
+        errorMessage.style.display = "none";
+        experienceList.innerHTML = "";
+
+        try {
+            const url =
+                `/api/experiences/?search=${encodeURIComponent(search)}`;
+
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch experiences.");
+            }
+
+            const experiences = await response.json();
+
+            loadingMessage.style.display = "none";
+
+            if (experiences.length === 0) {
+                emptyMessage.style.display = "block";
+                return;
+            }
+
+            experiences.forEach((experience) => {
+                const card = document.createElement("div");
+                card.className = "experience-card";
+
+                const title = document.createElement("h3");
+                title.textContent = experience.title;
+
+                const company = document.createElement("p");
+
+                const companyStrong =
+                    document.createElement("strong");
+
+                companyStrong.textContent = experience.company;
+
+                company.appendChild(companyStrong);
+
+                const description =
+                    document.createElement("p");
+
+                description.textContent =
+                    experience.description;
+
+                const date = document.createElement("p");
+
+                const endDate =
+                    experience.end_date || "Present";
+
+                date.textContent =
+                    `${experience.start_date} - ${endDate}`;
+
+                const stars = document.createElement("p");
+
+                stars.textContent =
+                    `⭐ ${experience.star_count} stars` +
+                    (experience.is_starred ? " · Starred" : "");
+
+                card.appendChild(title);
+                card.appendChild(company);
+                card.appendChild(description);
+                card.appendChild(date);
+                card.appendChild(stars);
+
+                experienceList.appendChild(card);
+            });
+
+        } catch (error) {
+            console.error(error);
+
+            loadingMessage.style.display = "none";
+            errorMessage.style.display = "block";
+        }
+    }
+
+
+    function getCookie(name) {
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+
+                if (cookie.startsWith(name + "=")) {
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    );
+
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
+
+
+    function closeExperienceModal() {
+        document
+            .getElementById("add-experience-modal")
+            .hidePopover();
+    }
+
+
+    async function addExperience(event) {
+        event.preventDefault();
+
+        const experienceForm =
+            document.getElementById("experience-form");
+
+        const submitButton =
+            document.getElementById("add-experience-submit");
+
+        submitButton.disabled = true;
+
+        try {
+            const response = await fetch(
+                CREATE_EXPERIENCE_API_ENDPOINT,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "X-CSRFToken": getCookie("csrftoken")
+                    },
+
+                    body: new FormData(experienceForm)
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+
+                if (data.errors) {
+                    const errorMessages =
+                        Object.values(data.errors)
+                            .flat()
+                            .join(" ");
+
+                    throw new Error(errorMessages);
+                }
+
+                throw new Error(
+                    data.error ||
+                    "Failed to create experience."
+                );
+            }
+
+            closeExperienceModal();
+
+            experienceForm.reset();
+
+            showToast(
+                "Success",
+                "Experience added successfully!",
+                "success"
+            );
+
+            await loadExperiences(
+                searchInput.value.trim()
+            );
+
+        } catch (error) {
+            console.error(error);
+
+            showToast(
+                "Error",
+                error.message ||
+                "Failed to create experience.",
+                "error"
+            );
+
+        } finally {
+            submitButton.disabled = false;
+        }
+    }
+
+
+    const searchInput =
+        document.getElementById("experience-search");
+
+    let searchTimeout;
+
+    searchInput.addEventListener("input", () => {
+        clearTimeout(searchTimeout);
+
+        searchTimeout = setTimeout(() => {
+            loadExperiences(searchInput.value);
+        }, 300);
+    });
+
+
+    loadExperiences();
+
+</script>
 
 {% endblock content %}
