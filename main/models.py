@@ -23,7 +23,15 @@ class Project(models.Model):
     technologies = models.CharField(max_length=200)
     project_url = models.URLField(blank=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    stars = models.ManyToManyField(User, related_name='starred_projects', blank=True)
+    starred_by = models.ManyToManyField(User, related_name='starred_projects', blank=True)
+
+    @property
+    def stars(self):
+        return self.starred_by
+
+    @stars.setter
+    def stars(self, value):
+        self.starred_by = value
 
     def __str__(self):
         return self.name

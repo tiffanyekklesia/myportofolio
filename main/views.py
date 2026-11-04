@@ -137,17 +137,17 @@ def toggle_star(request, project_id):
     project = get_object_or_404(Project, id=project_id)
 
     if request.method == "POST":
-        if request.user in project.stars.all():
-            project.stars.remove(request.user)
+        if request.user in project.starred_by.all():
+            project.starred_by.remove(request.user)
         else:
-            project.stars.add(request.user)
+            project.starred_by.add(request.user)
 
     return redirect('main:show_projects')
 
 def get_projects_json(request):
     name_query = request.GET.get("name", "").strip()
 
-    projects = Project.objects.prefetch_related('stars').all()
+    projects = Project.objects.prefetch_related('starred_by').all()
 
     if name_query:
         projects = projects.filter(name__icontains=name_query)
@@ -155,7 +155,7 @@ def get_projects_json(request):
     data = []
 
     for project in projects:
-        starred_users = project.stars.all()
+        starred_users = project.starred_by.all()
 
         is_starred = (
             request.user in starred_users
