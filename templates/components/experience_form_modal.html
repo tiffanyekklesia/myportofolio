@@ -6,7 +6,7 @@
     <div class="project-modal-content">
 
         <div class="project-modal-header">
-            <h2>Add Experience</h2>
+            <h2 id="experience-modal-title">Add Experience</h2>
 
             <button
                 type="button"
@@ -20,8 +20,8 @@
         <form
             id="experience-form"
             method="POST"
-            action="{% url 'main:create_experience_ajax' %}"
-            onsubmit="addExperience(event)"
+            action="{% url 'api:experience-list' %}"
+            onsubmit="saveExperience(event)"
         >
             {% csrf_token %}
 

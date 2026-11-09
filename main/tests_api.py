@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from main.models import Project
+from main.models import Experience, Project
 
 
 class ProjectAPITest(APITestCase):
@@ -56,6 +56,203 @@ class ProjectAPITest(APITestCase):
         response = self.client.post(self.list_url, self.payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Project.objects.filter(pk=response.data["id"]).exists())
+
+
+class ExperienceAPITest(APITestCase):
+    def setUp(self):
+        self.owner = User.objects.create_superuser(
+            username="experience-owner",
+            email="experience-owner@example.com",
+            password="test-owner-password",
+        )
+        self.visitor = User.objects.create_user(
+            username="experience-visitor",
+            password="test-visitor-password",
+        )
+        self.editor = User.objects.create_user(
+            username="experience-editor",
+            password="test-editor-password",
+        )
+        self.editor_group = Group.objects.create(name="Editor")
+        self.editor.groups.add(self.editor_group)
+        self.experience = Experience.objects.create(
+            title="Software Engineer",
+            company="Example Co",
+            description="Built useful software.",
+            start_date="2024-01-01",
+            end_date=None,
+        )
+        self.list_url = reverse("api:experience-list")
+        self.detail_url = reverse(
+            "api:experience-detail",
+            args=[self.experience.pk],
+        )
+        self.star_url = reverse(
+            "api:experience-star",
+            args=[self.experience.pk],
+        )
+        self.payload = {
+            "title": "Product Designer",
+            "company": "New Company",
+            "description": "Designed useful products.",
+            "start_date": "2025-01-01",
+            "end_date": None,
+        }
+
+    def test_public_read_and_search(self):
+        response = self.client.get(self.list_url, {"search": "engineer"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], self.experience.pk)
+        self.assertFalse(response.data[0]["is_starred"])
+        self.assertNotIn("stars", response.data[0])
+
+        missing = self.client.get(self.list_url, {"search": "not found"})
+        self.assertEqual(missing.data, [])
+        detail = self.client.get(self.detail_url)
+        self.assertEqual(detail.status_code, status.HTTP_200_OK)
+
+    def test_missing_experience_returns_404(self):
+        response = self.client.get(
+            reverse("api:experience-detail", args=[999999])
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_anonymous_and_regular_users_cannot_write(self):
+        for user in (None, self.visitor):
+            self.client.force_authenticate(user=user)
+            create_response = self.client.post(
+                self.list_url,
+                self.payload,
+                format="json",
+            )
+            patch_response = self.client.patch(
+                self.detail_url,
+                {"title": "Changed"},
+                format="json",
+            )
+            delete_response = self.client.delete(self.detail_url)
+
+            self.assertEqual(create_response.status_code, status.HTTP_403_FORBIDDEN)
+            self.assertEqual(patch_response.status_code, status.HTTP_403_FORBIDDEN)
+            self.assertEqual(delete_response.status_code, status.HTTP_403_FORBIDDEN)
+            self.assertEqual(Experience.objects.count(), 1)
+            self.experience.refresh_from_db()
+            self.assertEqual(self.experience.title, "Software Engineer")
+
+    def test_editor_can_patch_but_cannot_create_or_delete(self):
+        self.client.force_authenticate(user=self.editor)
+        patch_response = self.client.patch(
+            self.detail_url,
+            {"title": "Updated by editor"},
+            format="json",
+        )
+        self.assertEqual(patch_response.status_code, status.HTTP_200_OK)
+        self.experience.refresh_from_db()
+        self.assertEqual(self.experience.title, "Updated by editor")
+
+        create_response = self.client.post(
+            self.list_url,
+            self.payload,
+            format="json",
+        )
+        delete_response = self.client.delete(self.detail_url)
+        self.assertEqual(create_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(delete_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(Experience.objects.count(), 1)
+        self.assertTrue(Experience.objects.filter(pk=self.experience.pk).exists())
+
+    def test_owner_can_create_and_delete(self):
+        self.client.force_authenticate(user=self.owner)
+        create_response = self.client.post(
+            self.list_url,
+            self.payload,
+            format="json",
+        )
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+        created_id = create_response.data["id"]
+        self.assertTrue(Experience.objects.filter(pk=created_id).exists())
+
+        delete_response = self.client.delete(
+            reverse("api:experience-detail", args=[created_id])
+        )
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Experience.objects.filter(pk=created_id).exists())
+
+    def test_serializer_validation_and_html_stripping(self):
+        self.client.force_authenticate(user=self.owner)
+        invalid_response = self.client.post(
+            self.list_url,
+            {**self.payload, "title": "   "},
+            format="json",
+        )
+        self.assertEqual(
+            invalid_response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertIn("title", invalid_response.data)
+        self.assertEqual(Experience.objects.count(), 1)
+
+        sanitized_response = self.client.post(
+            self.list_url,
+            {
+                **self.payload,
+                "title": "  <b>Product Designer</b>  ",
+                "company": "<i>New Company</i>",
+                "description": "<p>Designed useful products.</p>",
+            },
+            format="json",
+        )
+        self.assertEqual(
+            sanitized_response.status_code,
+            status.HTTP_201_CREATED,
+        )
+        self.assertEqual(sanitized_response.data["title"], "Product Designer")
+        self.assertEqual(sanitized_response.data["company"], "New Company")
+        self.assertEqual(
+            sanitized_response.data["description"],
+            "Designed useful products.",
+        )
+
+    def test_star_requires_login_and_toggles_for_regular_user(self):
+        anonymous_response = self.client.post(self.star_url)
+        self.assertEqual(
+            anonymous_response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+        self.assertEqual(self.experience.stars.count(), 0)
+
+        self.client.force_authenticate(user=self.visitor)
+        first_response = self.client.post(self.star_url)
+        self.assertEqual(first_response.status_code, status.HTTP_200_OK)
+        self.assertTrue(first_response.data["is_starred"])
+        self.assertEqual(first_response.data["star_count"], 1)
+
+        second_response = self.client.post(self.star_url)
+        self.assertFalse(second_response.data["is_starred"])
+        self.assertEqual(second_response.data["star_count"], 0)
+        self.assertEqual(self.experience.stars.count(), 0)
+
+    def test_session_write_without_csrf_token_is_rejected(self):
+        client = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(
+            client.login(
+                username="experience-owner",
+                password="test-owner-password",
+            )
+        )
+        response = client.post(
+            self.list_url,
+            self.payload,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(Experience.objects.count(), 1)
+
+
+class ProjectAPITailTests(APITestCase):
+    def setUp(self):
+        ProjectAPITest.setUp(self)
 
     def test_validation(self):
         self.client.force_authenticate(user=self.owner)

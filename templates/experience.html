@@ -14,7 +14,7 @@ Tiffany Ekklesia - Experience
         {% if user.is_superuser %}
             <button
                 type="button"
-                popovertarget="add-experience-modal"
+                onclick="openExperienceEditor()"
             >
                 + Add Experience
             </button>
@@ -50,13 +50,23 @@ Tiffany Ekklesia - Experience
 
 </section>
 
-{% if user.is_superuser %}
-    {% include 'components/experience_form_modal.html' %}
-{% endif %}
+{% csrf_token %}
+{% include 'components/experience_form_modal.html' %}
 
 <script>
-    const CREATE_EXPERIENCE_API_ENDPOINT =
-        "{% url 'main:create_experience_ajax' %}";
+    const EXPERIENCE_DETAIL_ENDPOINT_TEMPLATE =
+        "{% url 'api:experience-detail' 0 %}";
+    const EXPERIENCE_STAR_ENDPOINT_TEMPLATE =
+        "{% url 'api:experience-star' 0 %}";
+    const IS_AUTHENTICATED =
+        "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
+    const CAN_EDIT_EXPERIENCES =
+        "{{ can_edit_experiences|yesno:'true,false' }}" === "true";
+    const CAN_DELETE_EXPERIENCES =
+        "{{ user.is_superuser|yesno:'true,false' }}" === "true";
+
+    const EXPERIENCE_API_ENDPOINT =
+        "{% url 'api:experience-list' %}";
 
     const experienceList =
         document.getElementById("experience-list");
@@ -70,6 +80,44 @@ Tiffany Ekklesia - Experience
     const errorMessage =
         document.getElementById("experience-error");
 
+    const searchInput =
+        document.getElementById("experience-search");
+    const experienceForm =
+        document.getElementById("experience-form");
+    const experienceModal =
+        document.getElementById("add-experience-modal");
+    const experienceModalTitle =
+        document.getElementById("experience-modal-title");
+    const experienceSubmitButton =
+        document.getElementById("add-experience-submit");
+
+    let editingExperienceId = null;
+
+
+    function experienceDetailUrl(experienceId) {
+        return EXPERIENCE_DETAIL_ENDPOINT_TEMPLATE.replace(
+            "/0/",
+            `/${experienceId}/`
+        );
+    }
+
+
+    function experienceStarUrl(experienceId) {
+        return EXPERIENCE_STAR_ENDPOINT_TEMPLATE.replace(
+            "/0/star/",
+            `/${experienceId}/star/`
+        );
+    }
+
+
+    function apiErrorMessage(data, fallback) {
+        const messages = Object.values(data || {})
+            .flatMap((value) => Array.isArray(value) ? value : [value])
+            .filter((value) => typeof value === "string");
+
+        return messages.join(" ") || fallback;
+    }
+
 
     async function loadExperiences(search = "") {
         loadingMessage.style.display = "block";
@@ -79,7 +127,7 @@ Tiffany Ekklesia - Experience
 
         try {
             const url =
-                `/api/experiences/?search=${encodeURIComponent(search)}`;
+                `${EXPERIENCE_API_ENDPOINT}?search=${encodeURIComponent(search)}`;
 
             const response = await fetch(url);
 
@@ -122,12 +170,10 @@ Tiffany Ekklesia - Experience
 
                 const endDate =
                     experience.end_date || "Present";
-
                 date.textContent =
                     `${experience.start_date} - ${endDate}`;
 
                 const stars = document.createElement("p");
-
                 stars.textContent =
                     `⭐ ${experience.star_count} stars` +
                     (experience.is_starred ? " · Starred" : "");
@@ -137,6 +183,38 @@ Tiffany Ekklesia - Experience
                 card.appendChild(description);
                 card.appendChild(date);
                 card.appendChild(stars);
+
+                if (IS_AUTHENTICATED) {
+                    const starButton = document.createElement("button");
+                    starButton.type = "button";
+                    starButton.textContent = experience.is_starred
+                        ? "Unstar"
+                        : "Star";
+                    starButton.addEventListener("click", () => {
+                        toggleExperienceStar(experience.id);
+                    });
+                    card.appendChild(starButton);
+                }
+
+                if (CAN_EDIT_EXPERIENCES) {
+                    const editButton = document.createElement("button");
+                    editButton.type = "button";
+                    editButton.textContent = "Edit";
+                    editButton.addEventListener("click", () => {
+                        openExperienceEditor(experience);
+                    });
+                    card.appendChild(editButton);
+                }
+
+                if (CAN_DELETE_EXPERIENCES) {
+                    const deleteButton = document.createElement("button");
+                    deleteButton.type = "button";
+                    deleteButton.textContent = "Delete";
+                    deleteButton.addEventListener("click", () => {
+                        deleteExperience(experience.id);
+                    });
+                    card.appendChild(deleteButton);
+                }
 
                 experienceList.appendChild(card);
             });
@@ -173,89 +251,163 @@ Tiffany Ekklesia - Experience
     }
 
 
-    function closeExperienceModal() {
-        document
-            .getElementById("add-experience-modal")
-            .hidePopover();
+    function openExperienceEditor(experience = null) {
+        editingExperienceId = experience ? experience.id : null;
+        experienceForm.reset();
+        experienceModalTitle.textContent = experience
+            ? "Edit Experience"
+            : "Add Experience";
+        experienceSubmitButton.textContent = experience
+            ? "Save Changes"
+            : "Add Experience";
+
+        if (experience) {
+            for (const [field, value] of Object.entries(experience)) {
+                const input = experienceForm.elements.namedItem(field);
+                if (input && !["id", "star_count", "is_starred"].includes(field)) {
+                    input.value = value || "";
+                }
+            }
+        }
+
+        experienceModal.showPopover();
     }
 
 
-    async function addExperience(event) {
+    function closeExperienceModal() {
+        experienceModal.hidePopover();
+    }
+
+
+    async function saveExperience(event) {
         event.preventDefault();
 
-        const experienceForm =
-            document.getElementById("experience-form");
-
-        const submitButton =
-            document.getElementById("add-experience-submit");
-
-        submitButton.disabled = true;
+        experienceSubmitButton.disabled = true;
 
         try {
+            const isEditing = editingExperienceId !== null;
+            const formData = new FormData(experienceForm);
+            const payload = Object.fromEntries(formData.entries());
+            if (payload.end_date === "") {
+                payload.end_date = null;
+            }
+
             const response = await fetch(
-                CREATE_EXPERIENCE_API_ENDPOINT,
+                isEditing
+                    ? experienceDetailUrl(editingExperienceId)
+                    : EXPERIENCE_API_ENDPOINT,
                 {
-                    method: "POST",
-
+                    method: isEditing ? "PATCH" : "POST",
                     headers: {
-                        "X-CSRFToken": getCookie("csrftoken")
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie("csrftoken"),
                     },
-
-                    body: new FormData(experienceForm)
+                    body: JSON.stringify(payload),
                 }
             );
-
             const data = await response.json();
 
             if (!response.ok) {
-
-                if (data.errors) {
-                    const errorMessages =
-                        Object.values(data.errors)
-                            .flat()
-                            .join(" ");
-
-                    throw new Error(errorMessages);
-                }
-
                 throw new Error(
-                    data.error ||
-                    "Failed to create experience."
+                    apiErrorMessage(
+                        data,
+                        isEditing
+                            ? "Failed to update experience."
+                            : "Failed to create experience."
+                    )
                 );
             }
 
             closeExperienceModal();
-
             experienceForm.reset();
-
+            editingExperienceId = null;
             showToast(
                 "Success",
-                "Experience added successfully!",
+                isEditing
+                    ? "Experience updated successfully!"
+                    : "Experience added successfully!",
                 "success"
             );
-
-            await loadExperiences(
-                searchInput.value.trim()
-            );
+            await loadExperiences(searchInput.value.trim());
 
         } catch (error) {
             console.error(error);
-
             showToast(
                 "Error",
                 error.message ||
-                "Failed to create experience.",
+                "Failed to save experience.",
                 "error"
             );
 
         } finally {
-            submitButton.disabled = false;
+            experienceSubmitButton.disabled = false;
         }
     }
 
 
-    const searchInput =
-        document.getElementById("experience-search");
+    async function toggleExperienceStar(experienceId) {
+        try {
+            const response = await fetch(
+                experienceStarUrl(experienceId),
+                {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                }
+            );
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    apiErrorMessage(data, "Failed to update star.")
+                );
+            }
+
+            await loadExperiences(searchInput.value.trim());
+        } catch (error) {
+            console.error(error);
+            showToast("Error", error.message, "error");
+        }
+    }
+
+
+    async function deleteExperience(experienceId) {
+        if (!window.confirm("Delete this experience?")) {
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                experienceDetailUrl(experienceId),
+                {
+                    method: "DELETE",
+                    headers: {
+                        "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (error) {
+                    console.error("Could not read delete error response.", error);
+                }
+                throw new Error(
+                    apiErrorMessage(data, "Failed to delete experience.")
+                );
+            }
+
+            showToast("Success", "Experience deleted.", "success");
+            await loadExperiences(searchInput.value.trim());
+        } catch (error) {
+            console.error(error);
+            showToast("Error", error.message, "error");
+        }
+    }
+
 
     let searchTimeout;
 

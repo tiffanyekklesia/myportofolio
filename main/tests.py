@@ -17,6 +17,18 @@ class ExperienceModelTest(TestCase):
         self.assertEqual(experience.company, "Test Company")
         self.assertIsNone(experience.end_date)
 
+
+class ExperiencePageTest(TestCase):
+    def test_experience_page_uses_api_and_sets_csrf_cookie(self):
+        response = self.client.get(reverse("main:show_experience"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "experience.html")
+        self.assertContains(response, 'id="experience-list"')
+        self.assertContains(response, "/api/v1/experiences/")
+        self.assertIn("csrftoken", response.cookies)
+
+
 class ProjectPageTest(TestCase):
     def test_projects_page_url_and_template(self):
         response = self.client.get(reverse('main:show_projects'))
@@ -31,11 +43,14 @@ class ProjectPageTest(TestCase):
             technologies="Python"
         )
 
-        response = self.client.get(reverse('main:show_projects'))
+        page = self.client.get(reverse('main:show_projects'))
+        self.assertContains(page, 'id="grid"')
 
-        self.assertContains(response, project.name)
-        self.assertContains(response, project.description)
-        self.assertContains(response, project.technologies)
+        response = self.client.get(reverse('api:project-list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]["name"], project.name)
+        self.assertEqual(response.data[0]["description"], project.description)
+        self.assertEqual(response.data[0]["technologies"], project.technologies)
 
     def test_empty_state_appears(self):
         response = self.client.get(reverse('main:show_projects'))

@@ -30,8 +30,13 @@ def show_main(request):
 
 
 def show_experience(request):
+    can_edit_experiences = request.user.is_superuser or (
+        request.user.is_authenticated
+        and request.user.groups.filter(name="Editor").exists()
+    )
     context = {
         'form': ExperienceForm(),
+        'can_edit_experiences': can_edit_experiences,
     }
 
     return render(request, "experience.html", context)
@@ -182,7 +187,11 @@ def get_projects_json(request):
 
     return JsonResponse(data, safe=False)
 
+@login_required(login_url='/login/')
 def create_experience(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
     if request.method == "POST":
         form = ExperienceForm(request.POST)
         if form.is_valid():
@@ -223,7 +232,14 @@ def create_experience_ajax(request):
         status=400
     )
 
+@login_required(login_url='/login/')
 def update_experience(request, experience_id):
+    if not (
+        request.user.is_superuser
+        or request.user.groups.filter(name="Editor").exists()
+    ):
+        raise PermissionDenied
+
     experience = get_object_or_404(Experience, id=experience_id)
 
     if request.method == "POST":
@@ -236,7 +252,11 @@ def update_experience(request, experience_id):
 
     return render(request, "experiences_form.html", {'form': form})
 
+@login_required(login_url='/login/')
 def delete_experience(request, experience_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
     if request.method == "POST":
         experience = get_object_or_404(
             Experience,

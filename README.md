@@ -44,6 +44,15 @@ Answer  : `fetch()` returns a Promise because the browser needs to perform the n
 3. Explain what XSS is and why displaying data through JavaScript and AJAX can make XSS protection especially important.
 Answer  : Cross-Site Scripting (XSS) is an attack where malicious scripts are inserted into content that is later displayed and executed in a user's browser. XSS protection is especially important when using AJAX because data returned from the server is manually inserted into the DOM using JavaScript. If untrusted data were inserted using `innerHTML`, malicious HTML or JavaScript could potentially be interpreted by the browser. In my project, the server removes HTML tags from Experience input using `strip_tags()` in the ModelForm, while the frontend uses DOM methods such as `textContent` instead of `innerHTML` when displaying the returned data. This provides protection on both the server and client sides.
 
+### Assignment 6
+1. REST is an architectural style for APIs that uses resource-oriented URLs, standard HTTP methods, stateless requests, and appropriate HTTP status codes. Returning JSON by itself does not make an API RESTful; the API should also use these conventions consistently. `PUT` replaces a resource with the submitted representation, while `PATCH` changes only the supplied fields. For example, I use `PATCH` to update only an Experience title and would use `PUT` when submitting the complete Experience record.
+
+2. A Django REST Framework serializer converts model instances to JSON-compatible data and validates incoming data before it is saved. It keeps field selection, validation, and representation in one reusable place. This is safer and easier to maintain than manually building dictionaries with `JsonResponse`, where each view would need to implement conversion and validation itself.
+
+3. Authentication identifies who is making a request; authorization decides what that user is allowed to do. In my API, the permission class allows visitors to read, regular users to star items, Editors to update items, and the portfolio owner to create or delete them. These checks must run on the server because users can bypass hidden or disabled template buttons and send requests directly to an endpoint.
+
+4. With `SessionAuthentication`, the browser automatically sends the user's session cookie, so a malicious site could try to make an authenticated browser submit a write request. A CSRF token helps verify that the request came from the portfolio site. A test using `force_authenticate` skips the normal session login and CSRF validation flow, so I use `APIClient(enforce_csrf_checks=True)` with `.login()` to verify that a session-authenticated write without a CSRF token is rejected.
+
 ### AI disclosure
 I used ChatGPT as an AI-assisted learning and development tool during this assignment.
 AI assistance was used to:
@@ -55,3 +64,4 @@ AI assistance was used to:
 * explain JavaScript DOM manipulation, AJAX, Fetch API, async/await, debouncing, CSRF handling, and XSS protection
 * help reason through the implementation of the AJAX-based Experience section
 My main prompting approach was to ask the AI to explain the reasoning behind the suggested implementations rather than only requesting a finished solution. AI-generated suggestions were not accepted blindly. I manually checked the resulting structure, corrected personal information, adjusted the implementation, and tested the functionality in the browser, including AJAX loading, search, form validation, permissions, toast notifications, and XSS protection.
+This project was also developed with the assistance of AI tools such as GitHub Copilot for code suggestions, debugging help, and drafting documentation. The AI was used to accelerate learning and improve productivity, but all final code, logic, and project decisions were reviewed and validated by the author. The author is responsible for the final implementation and correctness of the project, including running tests and ensuring it meets the assignment requirements.
